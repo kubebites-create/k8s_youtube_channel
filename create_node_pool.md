@@ -1,4 +1,4 @@
-# Creating Kubernetes Nodes with Terraform
+# Create Kubernetes Nodes Pool with Terraform
 
 In practice, you rarely use Terraform to create the raw "Node Object" inside Kubernetes manually. Instead, you use Terraform to provision the infrastructure (like an AWS EC2 instance or Google Compute Engine VM) and configure it.
 
