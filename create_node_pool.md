@@ -1,16 +1,16 @@
-Yes, you can use Terraform to create a Kubernetes Node, but it is important to distinguish between provisioning the infrastructure (the virtual machine) and registering the Node object (telling Kubernetes it exists).
+# Creating Kubernetes Nodes with Terraform
 
-In practice, you rarely use Terraform to create the raw "Node Object" inside Kubernetes manually. Instead, you use Terraform to provision the infrastructure (like an AWS EC2 instance or Google Compute Engine VM) and configure it to self-register (as described in your previous text).
+In practice, you rarely use Terraform to create the raw "Node Object" inside Kubernetes manually. Instead, you use Terraform to provision the infrastructure (like an AWS EC2 instance or Google Compute Engine VM) and configure it.
 
 Here is how it is done in the two most common scenarios:
 
-1. The "Cloud Managed" Way (Recommended)
+## 1. The "Cloud Managed" Way (Recommended)
+
 If you are using a managed Kubernetes service (like EKS, GKE, or AKS), you don't create individual nodes. You create a Node Group or Node Pool. Terraform instructs the cloud provider to spin up the VMs, and the cloud provider handles the kubelet registration for you.
 
 Example (AWS EKS Node Group):
 
-Terraform
-
+```hcl
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "example-node-group"
@@ -27,15 +27,17 @@ resource "aws_eks_node_group" "example" {
   ami_type       = "AL2_x86_64" 
   instance_types = ["t3.medium"]
 }
+```
+
 In this scenario, AWS automatically starts the kubelet with the --register-node flag mentioned in your text.
 
-2. The "Self-Managed" Way (Custom VMs)
+## 2. The "Self-Managed" Way (Custom VMs)
+
 If you are building a cluster from scratch (e.g., using kubeadm on raw VMs), you use Terraform to create the Virtual Machine. You then use a startup script (User Data) to install the kubelet and runs the registration command.
 
 Example (Generic AWS EC2 Instance):
 
-Terraform
-
+```hcl
 resource "aws_instance" "k8s_node" {
   ami           = "ami-0c55b159cbfafe1f0" # Ubuntu or similar
   instance_type = "t3.medium"
@@ -59,11 +61,13 @@ resource "aws_instance" "k8s_node" {
     Name = "my-first-k8s-node"
   }
 }
-Can I create just the "Node Object"?
+```
+
+## Can I create just the "Node Object"?
+
 Technically, yes. The Terraform Kubernetes Provider has a resource called kubernetes_node.
 
-Terraform
-
+```hcl
 resource "kubernetes_node" "example" {
   metadata {
     name = "10.240.79.157"
@@ -72,4 +76,6 @@ resource "kubernetes_node" "example" {
     }
   }
 }
-Why you typically shouldn't do this: As your text noted: "If the node is healthy (i.e. all necessary services are running), then it is eligible to run a Pod." Creating the object via Terraform only creates the record in the API server. It does not create the actual server, install the kubelet, or start the services. If you do this without having a real machine ready to back it up, the Node status will simply remain NotReady, and the control plane will ignore it.
+```
+
+Creating the Node object via Terraform only creates the record in the API server. It does not create the actual server, install the kubelet, or start the services. If you do this without having a real machine ready to back it up, the Node status will simply remain NotReady, and the control plane will ignore it.
